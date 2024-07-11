@@ -6,8 +6,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import os
+from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
 import time
-
+import datetime
 
 class MyApp(App):
     def build(self):
@@ -21,18 +22,35 @@ class MyApp(App):
 
     def run_selenium_to_comment(self, instance):
         def log_error(message):
-            with open("error_log.txt", "a") as file:
-                file.write(f"{message}\n")
+            try:
+                # Create a unique log file name using a timestamp
+                timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                log_file_name = f"error_log_{timestamp}.txt"
+
+                # Get the absolute path to the directory of the current script
+                script_directory = os.path.dirname(os.path.realpath(__file__))
+                log_file_path = os.path.join(script_directory, log_file_name)
+
+                with open(log_file_path, "w") as file:  # Use "w" to overwrite for each new log
+                    file.write(f"{message}\n")
+            except Exception as logging_error:
+                # Handle potential errors within the logging process
+                print(f"Error logging message: {logging_error}")
 
         try: 
             #test url
-            url = [
-                    "http://fit.trianh.edu.vn/phong-thi-nghiem-an-toan-thong-tin/", 
-                    "https://mru.home.pl/produkt/afriso-tm8-ir/#reviews"]
+            url = ["http://fit.trianh.edu.vn/phong-thi-nghiem-an-toan-thong-tin/",  
+                    "https://www.golfonline.sk/odborne-clanky/greenkeeping/plesen-snezna-a-plesen-snezna-siva/", 
+                    "https://mru.home.pl/produkt/afriso-tm8-ir/#reviews",
+                    "https://www.fivereasonssports.com/news/4-types-of-candy-most-adults-will-like/",
+                    "https://www.lizsteel.com/a-new-favourite-teapot-to-sketch/",
+                    "https://www.neobienetre.fr/forum-bien-etre-medecines-douces-developpement-personnel/topic/play-game-for-fun/",
+                    "https://bulevard.bg/interviews/ivaylo-zahariev-v-ekskluzivno-intervyu-19.html",
+                    "https://www.thelowdownblog.com/2018/03/riding-in-smartphone-powered-self.html"]
 
-            content = "HomeNest vip pro"
-            email = "admin@homenest.com.vn."
-            phone = "admin@homenest.com.vn."
+            content = "Chúng tôi là chuyên gia hàng đầu trong lĩnh vực SEO, Thiết kế Website và Marketing......."
+            email = "admin@homenest.com.vn"
+            phone = "https://homenest.com.vn/ve-chung-toi/"
             author = "HomeNest"
 
             #path to chromedriver
@@ -53,7 +71,7 @@ class MyApp(App):
             for(url) in url:
                 try:    
                     driver.get(url)
-                    wait = WebDriverWait(driver, 10)
+                    wait = WebDriverWait(driver, 1)
         
                     # Define selectors
                     selectors = {
@@ -91,138 +109,23 @@ class MyApp(App):
                         email_field.send_keys(email)
                         phone_field.send_keys(phone)
                         author_field.send_keys(author)
-         
+
+                        # Scroll to the submit button and click it
+                        driver.execute_script("arguments[0].scrollIntoView(true);", comment_field)
+                        time.sleep(1)  # Adding delay to ensure the element is ready for interaction
                         submit_button.click()
-                        
-                        # Wait for the URL to change after submission
-                        time.sleep(5)
-
-                        if driver.current_url == url:
-                                time.sleep(10)
-                                continue
-                        
-                except EC.UnexpectedAlertPresentException as alert_ex:
-                    alert_text = driver.switch_to.alert.text
-                    log_error(f"Unexpected alert encountered on URL {url}: {alert_text}")
+                        time.sleep(2)
+                except UnexpectedAlertPresentException:
+                    log_error(f"Unexpected alert encountered on URL {url}")
                     continue  # Move to the next URL after handling the alert
-
+                
+                except Exception as e:
+                    log_error(f"An error occurred while trying to comment on URL {url}: {e}")
    
         except Exception as e:
             print(f"An error occurred while logging in: {e}")
-        
-        finally:
-            driver.quit()
 
 
-    def run_selenium_to_login(self, instance):
-
-        #this is just for test login function
-        try: 
-            #test url
-            url = ["https://vocal.media/signin?successRedirect=", 
-                   "https://blendermarket.com/login"]
- 
-            username = "thienthanbongtoi1210@gmail.com"
-            password1 = "vinh12345678"
-            password2 = "Vinh12345678"
-
-            data_user = [
-            {"username": "thienthanbongtoi1210@gmail.com", "password": "vinh12345678"},
-            {"username": "thienthanbongtoi1210@gmail.com", "password": "Vinh12345678"}
-            ]
-            
-
-            #path to chromedriver
-            script_directory = os.path.dirname(os.path.realpath(__file__))
-            chromedriver_path = os.path.join(script_directory, "chromedriver.exe")
-
-            # Initialize the Chrome WebDriver
-            chrome_options = webdriver.ChromeOptions()
-            chrome_options.add_experimental_option("prefs", {"profile.managed_default_content_settings.sensors": 2})
-            chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
-            chrome_options.add_argument("--disable-web-security")
-            chrome_options.add_argument("--accept_insecure_certs")
-            chrome_options.add_argument("--allow-running-insecure-content")
-            chrome_options.add_argument("--allow-insecure-localhost")
-            chrome_options.add_argument("--ignore-certificate-errors")
-            driver = webdriver.Chrome(options=chrome_options)
-            for user in data_user:
-                for(url) in url:
-                    
-                        driver.get(url)
-                        wait = WebDriverWait(driver, 10)
-                        username_selectors = [
-                            "input[type='text'][name='email']",
-                            "input[type='email']",
-                            "input[name='email']",
-                            "input[name='username']"
-                        ]
-                        password_selectors = [
-                            "input[type='password'][name='password']",
-                            "input[type='password']",
-                            "input[name='password']"
-                        ]
-                        login_button_selectors = [
-                            "button[type='submit']",
-                            "input[type='submit']",
-                            "button[type='button']"
-                        ]
-
-                        username_field = None
-                        for selector in username_selectors:
-                            try:
-                                username_field = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
-                                if username_field:
-                                    break
-                            except:
-                                print("Username field not found")
-                                continue
-
-                        password_field = None
-                        for selector in password_selectors:
-                            try:
-                                password_field = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
-                                if password_field:
-                                    break
-                            except:
-                                print("Password field not found")
-                                continue
-
-                        login_button = None
-                        for selector in login_button_selectors:
-                            try:
-                                login_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
-                                if login_button:
-                                    break
-                            except:
-                                print("Login button not found")
-                                continue
-
-                        if username_field and password_field and login_button:
-                            # Enter credentials and submit
-                            username_field.send_keys(user["username"])
-                            password_field.send_keys(user["password"])
-                            login_button.click()
-
-                            # Wait for the URL to change after login
-                            wait.until(EC.url_changes(url))
-
-                            # Check if login was successful by verifying the URL has changed
-                            if driver.current_url != url:
-                                print(f"Login successful for {user['username']} on {url}")
-                                continue
-                            elif driver.current_url == url:
-                                print(f"Login failed for {user['username']} on {url}")
-                                continue
-                            else:
-                                print(f"Login failed for {user['username']} on {url}")
-                                continue
-
-
-                    #driver.quit()
-        except Exception as e:
-            print(f"An error occurred while logging in: {e}")
-        
-
+    
 if __name__ == "__main__":
     MyApp().run()
